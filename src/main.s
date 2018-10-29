@@ -42,7 +42,13 @@ main:
 
     ldr r3, =bg0Tiles              @Tile source
     mov r4, #VRAM                  @VRAM base pointer + TileBase * 0x4000
-    mov r5, #8                     @4bpp tile size is 8 words
+    mov r5, #3*8                   @4bpp tile size is 8 words
+    dma0_copy r3, r4, r5
+
+    ldr r3, =bg0Map
+    mov r4, #VRAM
+    add r4, #0x2000
+    mov r5, #2048
     dma0_copy r3, r4, r5
 
     ldr r3, =bg0Pal               @Test palette
