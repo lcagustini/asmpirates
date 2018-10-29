@@ -3,58 +3,74 @@
 
 .set DISPCNT, 0x4000000
 .set VRAM, 0x6000000
+.set PALRAM, 0x5000000
+
+.macro dma0_copy src dest size
+    mov r0, #0x4000000              @DMA0 source
+    add r0, #0xB0
+    str \src, [r0]
+
+    mov r0, #0x4000000              @DMA0 destination
+    add r0, #0xB4
+    str \dest, [r0]
+
+    mov r0, #0x4000000              @DMA0 word count
+    add r0, #0xB8
+    strh \size, [r0]
+
+    mov r0, #0x4000000              @DMA0 control reg
+    add r0, #0xBA
+    mov r1, #0b1000010000000000     @Increment src and dest addr; no repeat; tranfer type = 32bits; start immediately; won't cause an IRQ; enables channel
+    strh r1, [r0]
+.endm
 
 .global main
-
-.macro get_input reg
-    mov \reg, #0x4000000
-    add \reg, #0x130
-    ldr \reg, [\reg]
-.endm
 
 .text
 main:
     mov r0, #DISPCNT                @Display Controller reg
-    mov r1, #0x400                  @Mode 3 + BG2 enabled
-    add r1, r1, #3
+    mov r1, #0xF00                  @Mode 0 + BG0-3 enabled
     str r1, [r0]
 
-X .req r5
-Y .req r6
-    mov X, #0                       @Dot X and Y
-    mov Y, #0
-forever:
-    get_input r0                    @Get user input
+    mov r0, #0x4000000              @Setting up BG0 with:
+    add r0, #8
+    mov r1, #0b00100010000000000    @Priority = 0; TileBase = 0; Mosaic = false; palette = 16/16; MapBase = 4; Size = 256x256
+    str r1, [r0]
 
+    ldr r3, =test_tile              @Tile source
+    mov r4, #VRAM                   @VRAM base pointer + TileBase * 0x4000
+    mov r5, #8                      @Tile size is 8 words
+    dma0_copy r3, r4, r5
+
+    ldr r3, =test_pal               @Test palette
+    mov r4, #PALRAM                 @Palette memory
+    mov r5, #1                      @For now needs only two colors, which is a word long for both
+    dma0_copy r3, r4, r5
+
+forever:
+    mov r0, #0x4000000              @r0 = KEYINPUT
+    add r0, #0x130
+    ldr r0, [r0]                    @Load user input
+
+/*
 input.start:
 input.right:
-    cmp X, #239                      @If X < 240
-    bge input.left
     and r1, r0, #0b00100000         @and "right" bit is set
     cmp r1, #0
-    addne X, #1                     @X += 1
 
 input.left:
-    cmp X, #0                        @If X > 0
-    ble input.up
     and r1, r0, #0b00010000         @and "left" bit is set
     cmp r1, #0
-    subne X, #1                     @X -= 1
 
 input.up:
-    cmp Y, #0                        @if Y > 0
-    ble input.down
     and r1, r0, #0b10000000         @and "up" bit is set
     cmp r1, #0
-    subne Y, #1                     @Y -= 1
 
 input.down:
-    cmp Y, #159                      @if Y < 160
-    bge input.end
     and r1, r0, #0b01000000         @and "down" bit is set
     cmp r1, #0
-    addne Y, #1                     @Y += 1
 input.end:
+*/
 
 wait_vblank:
     mov r0, #0x4000000              @Loads REG_VCOUNT
@@ -63,33 +79,19 @@ wait_vblank:
     cmp r0, #161                    @Waits for first vblank scanline
     bne wait_vblank
 
-    mov r1, #480
-    lsl r0, X, #1
-    mla r1, Y, r1, r0               @r1 = Y * (240 pixels per line * 2 bytes per pixel) + X * 2 bytes per pixel
-    mov r0, #VRAM                   @Base VRAM pointer
-    add r0, r1                      @Adds offset in r1 to base pointer
-
-    mov r1, #0                      @r1 = black
-
-    strh r1, [r0, #2]               @Resets area around dot to black
-    strh r1, [r0, #-2]
-    mov r2, #480
-    strh r1, [r0, r2]
-    add r2, #2
-    strh r1, [r0, r2]
-    sub r2, #4
-    strh r1, [r0, r2]
-    add r2, #2
-    rsb r2, #0
-    strh r1, [r0, r2]
-    add r2, #2
-    strh r1, [r0, r2]
-    sub r2, #4
-    strh r1, [r0, r2]
-
-    mov r1, #0xFF                   @r1 = red
-    strh r1, [r0]                   @Stores red to VRAM
-
     b forever
-.unreq X
-.unreq Y
+
+.data
+test_tile:
+    .byte 0x00, 0x00, 0x00, 0x00
+    .byte 0x00, 0x00, 0x00, 0x00
+    .byte 0x00, 0x00, 0x00, 0x00
+    .byte 0x00, 0x10, 0x01, 0x00
+    .byte 0x00, 0x10, 0x01, 0x00
+    .byte 0x00, 0x00, 0x00, 0x00
+    .byte 0x00, 0x00, 0x00, 0x00
+    .byte 0x00, 0x00, 0x00, 0x00
+
+test_pal:
+    .byte 0x03, 0xE0
+    .byte 0x57, 0xE0
