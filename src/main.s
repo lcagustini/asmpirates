@@ -62,10 +62,10 @@ main:
     mov r5, #0                      @Palette slot = 0
     bl create_sprite
 
-X_offset .req r6
-Y_offset .req r7
-    mov X_offset, #0
-    mov Y_offset, #0
+X .req r6
+Y .req r7
+    mov X, #0
+    mov Y, #0
 forever:
     mov r0, #0x4000000              @r0 = KEYINPUT
     add r0, #0x130
@@ -75,30 +75,27 @@ input.start:
 input.right:
     and r1, r0, #0b00100000         @and "right" bit is set
     cmp r1, #0
-    addne X_offset, #1              @if "right" scrolls bg accordingly
+    addne X, #1                     @if "right" scrolls bg accordingly
 input.left:
     and r1, r0, #0b00010000         @and "left" bit is set
     cmp r1, #0
-    subne X_offset, #1              @if "left" scrolls bg accordingly
-
-    mov r1, #0x4000000              @Stores current x scroll to BG0 X-offset reg
-    add r1, #0x10
-    strh X_offset, [r1]
+    subne X, #1                     @if "left" scrolls bg accordingly
 
 input.up:
     and r1, r0, #0b10000000         @and "up" bit is set
     cmp r1, #0
-    subne Y_offset, #1              @if "up" scrolls bg accordingly
+    subne Y, #1                     @if "up" scrolls bg accordingly
 
 input.down:
     and r1, r0, #0b01000000         @and "down" bit is set
     cmp r1, #0
-    addne Y_offset, #1              @if "down" scrolls bg accordingly
-
-    mov r1, #0x4000000              @Stores current y scroll to BG0 Y-offset reg
-    add r1, #0x12
-    strh Y_offset, [r1]
+    addne Y, #1                     @if "down" scrolls bg accordingly
 input.end:
+
+    mov r0, r6                      @Updates sprite 0 with X and Y after input
+    mov r1, r7
+    mov r2, #0
+    bl update_sprite
 
 wait_vblank:
     mov r0, #0x4000000              @Loads REG_VCOUNT
@@ -108,18 +105,3 @@ wait_vblank:
     bne wait_vblank
 
     b forever
-
-.data
-.align 2
-test_pal:
-    .hword 0xFF00, 0xFFFF
-
-test_tile:
-    .word 0x00011000
-    .word 0x00111100
-    .word 0x01111110
-    .word 0x11111111
-    .word 0x11111111
-    .word 0x01111110
-    .word 0x00111100
-    .word 0x00011000
