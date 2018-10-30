@@ -15,7 +15,7 @@
 .global main
 main:
     mov r0, #DISPCNT                @Display Controller reg
-    mov r1, #0b101000000            @Mode 0 + BG0 enabled + 1D OBJ mapping
+    mov r1, #0b1000101000000        @Mode 0 + BG0 enabled + OBJ enabled + 1D OBJ mapping
     str r1, [r0]
 
     mov r0, #0x4000000              @Setting up BG0 with:
@@ -38,6 +38,27 @@ main:
     mov r1, #PALRAM                 @Palette memory
     mov r2, #8                      @Each color is 16bit
     bl dma0_copy
+
+    ldr r0, =test_tile
+    mov r1, #0x6000000
+    add r1, #0x10000                @OBJ tile vram location
+    add r1, #32                     @Tile base 1 -> 32 bytes offset
+    mov r2, #8
+    bl dma0_copy
+
+    ldr r0, =test_pal
+    mov r1, #0x05000000             @OBJ palette pointer
+    add r1, #0x200                  @Copies a couple colors to the first palette slot
+    mov r2, #1
+    bl dma0_copy
+
+    mov r0, #10                     @X = 10
+    mov r1, #10                     @Y = 10
+    mov r2, #0                      @Square
+    mov r3, #0                      @8x8
+    mov r4, #1                      @Tile base = 1
+    mov r5, #0                      @Palette slot = 0
+    bl create_sprite
 
 X_offset .req r6
 Y_offset .req r7
@@ -85,3 +106,18 @@ wait_vblank:
     bne wait_vblank
 
     b forever
+
+.data
+.align 2
+test_pal:
+    .hword 0xFF00, 0xFFFF
+
+test_tile:
+    .word 0x00011000
+    .word 0x00111100
+    .word 0x01111110
+    .word 0x11111111
+    .word 0x11111111
+    .word 0x01111110
+    .word 0x00111100
+    .word 0x00011000
