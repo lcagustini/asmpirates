@@ -8,6 +8,8 @@
 .set OAM, 0x07000000
 
 .include "src/bg0.s"
+.include "src/obj0.s"
+
 .include "src/dma.s"
 .include "src/sprite.s"
 
@@ -39,17 +41,17 @@ main:
     mov r2, #8                      @Each color is 16bit
     bl dma0_copy
 
-    ldr r0, =test_tile
+    ldr r0, =obj0Tiles
     mov r1, #0x6000000
     add r1, #0x10000                @OBJ tile vram location
     add r1, #32                     @Tile base 1 -> 32 bytes offset
     mov r2, #8
     bl dma0_copy
 
-    ldr r0, =test_pal
+    ldr r0, =obj0Pal
     mov r1, #0x05000000             @OBJ palette pointer
     add r1, #0x200                  @Copies a couple colors to the first palette slot
-    mov r2, #1
+    mov r2, #8
     bl dma0_copy
 
     mov r0, #10                     @X = 10
