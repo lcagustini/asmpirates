@@ -1,4 +1,3 @@
-.align 2
 .arm
 
 .set DISPCNT, 0x4000000
@@ -15,15 +14,16 @@
 
 .text
 .global main
+.align 2
 main:
     mov r0, #DISPCNT                @Display Controller reg
     mov r1, #0b1000101000000        @Mode 0 + BG0 enabled + OBJ enabled + 1D OBJ mapping
-    str r1, [r0]
+    strh r1, [r0]
 
     mov r0, #0x4000000              @Setting up BG0 with:
     add r0, #8
-    mov r1, #0b11100010000000000    @Priority = 0; TileBase = 0; Mosaic = false; palette = 16/16; MapBase = 4; Size = 512x512
-    str r1, [r0]
+    mov r1, #0b1100010000000000    @Priority = 0; TileBase = 0; Mosaic = false; palette = 16/16; MapBase = 4; Size = 512x512
+    strh r1, [r0]
 
     ldr r0, =bg0Tiles               @Tile source
     mov r1, #VRAM                   @VRAM base pointer + TileBase * 0x4000
@@ -45,19 +45,19 @@ main:
     mov r1, #0x6000000
     add r1, #0x10000                @OBJ tile vram location
     add r1, #32                     @Tile base 1 -> 32 bytes offset
-    mov r2, #8
+    mov r2, #512                    @64x64 sprite is 8x8 tiles -> 64 tiles * 8 word per tile
     bl dma0_copy
 
     ldr r0, =obj0Pal
     mov r1, #0x05000000             @OBJ palette pointer
-    add r1, #0x200                  @Copies a couple colors to the first palette slot
+    add r1, #0x200                  @Copies colors to the first palette slot
     mov r2, #8
     bl dma0_copy
 
     mov r0, #10                     @X = 10
     mov r1, #10                     @Y = 10
     mov r2, #0                      @Square
-    mov r3, #0                      @8x8
+    mov r3, #11                     @64x64
     mov r4, #1                      @Tile base = 1
     mov r5, #0                      @Palette slot = 0
     bl create_sprite
@@ -92,14 +92,21 @@ input.down:
     addne Y, #1                     @if "down" scrolls bg accordingly
 input.end:
 
-    mov r0, r6                      @Updates sprite 0 with X and Y after input
-    mov r1, r7
+wait_vblank:
+    mov r0, #0x4000000              @Loads REG_VCOUNT
+    add r0, #6
+    ldrh r0, [r0]
+    cmp r0, #161                    @Waits for first vblank scanline
+    bne wait_vblank
+
+    mov r0, X                       @OAM should be updated only on vblank to avoid tearing
+    mov r1, Y
     mov r2, #0
-    bl update_sprite
+    bl update_sprite                @Updates sprite 0 with X and Y
 
     ldr r0, =sprite_rotate          @Loads rotate struct and updates the angle
     ldr r1, [r0, #4]
-    add r1, #0x100
+    add r1, #0x10
     str r1, [r0, #4]
 
     mov r1, #0x7000000              @Address of first affine matrix
@@ -108,16 +115,10 @@ input.end:
     mov r3, #8                      @OBJ matrix update
     swi 0xF0000                     @Syscall to generate affine matrix from rotate struct
 
-wait_vblank:
-    mov r0, #0x4000000              @Loads REG_VCOUNT
-    add r0, #6
-    ldrh r0, [r0]
-    cmp r0, #161                    @Waits for first vblank scanline
-    bne wait_vblank
-
     b forever
 
 .data
+.align 2
 sprite_rotate:
     .hword 0b100000000              @X scale
     .hword 0b100000000              @Y scale

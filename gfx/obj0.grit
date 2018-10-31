@@ -4,5 +4,5 @@
 -gB4 # Bit depth of the output
 -gTFF00FF
 #metatile
--Mh1 # Metatile height
--Mw1 # Metatile width
+-Mh8 # Metatile height
+-Mw8 # Metatile width
