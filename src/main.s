@@ -1,5 +1,3 @@
-.arm
-
 .set DISPCNT, 0x4000000
 .set VRAM, 0x6000000
 .set PALRAM, 0x5000000
@@ -15,6 +13,7 @@
 .text
 .global main
 .align 2
+.arm
 main:
     mov r0, #DISPCNT                @Display Controller reg
     mov r1, #0b1000101000000        @Mode 0 + BG0 enabled + OBJ enabled + 1D OBJ mapping
@@ -22,7 +21,7 @@ main:
 
     mov r0, #0x4000000              @Setting up BG0 with:
     add r0, #8
-    mov r1, #0b1100010000000000    @Priority = 0; TileBase = 0; Mosaic = false; palette = 16/16; MapBase = 4; Size = 512x512
+    mov r1, #0b1100010000000000     @Priority = 0; TileBase = 0; Mosaic = false; palette = 16/16; MapBase = 4; Size = 512x512
     strh r1, [r0]
 
     ldr r0, =bg0Tiles               @Tile source
@@ -70,24 +69,25 @@ forever:
     mov r0, #0x4000000              @r0 = KEYINPUT
     add r0, #0x130
     ldr r0, [r0]                    @Load user input
+    mvn r0, r0                      @Makes pressed button = 1 (default is = 0)
 
 input.start:
 input.right:
-    and r1, r0, #0b00100000         @and "right" bit is set
+    and r1, r0, #0b00010000         @and "right" bit is set
     cmp r1, #0
     addne X, #1                     @if "right" scrolls bg accordingly
 input.left:
-    and r1, r0, #0b00010000         @and "left" bit is set
+    and r1, r0, #0b00100000         @and "left" bit is set
     cmp r1, #0
     subne X, #1                     @if "left" scrolls bg accordingly
 
 input.up:
-    and r1, r0, #0b10000000         @and "up" bit is set
+    and r1, r0, #0b01000000         @and "up" bit is set
     cmp r1, #0
     subne Y, #1                     @if "up" scrolls bg accordingly
 
 input.down:
-    and r1, r0, #0b01000000         @and "down" bit is set
+    and r1, r0, #0b10000000         @and "down" bit is set
     cmp r1, #0
     addne Y, #1                     @if "down" scrolls bg accordingly
 input.end:
@@ -106,7 +106,7 @@ wait_vblank:
 
     ldr r0, =sprite_rotate          @Loads rotate struct and updates the angle
     ldr r1, [r0, #4]
-    add r1, #0x10
+    add r1, #0x10                   @Makes sprite rotate forever
     str r1, [r0, #4]
 
     mov r1, #0x7000000              @Address of first affine matrix
