@@ -15,6 +15,7 @@ create_sprite:
     and r8, r7, r1
     and r2, #0b11
     lsl r7, r2, #14
+    orr r8, #0b1100000000   @Affine sprite with double size box
     orr r8, r7              @OBJ attrib 0
 
     mov r7, #0x100

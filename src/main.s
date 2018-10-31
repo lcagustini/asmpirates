@@ -97,6 +97,17 @@ input.end:
     mov r2, #0
     bl update_sprite
 
+    ldr r0, =sprite_rotate          @Loads rotate struct and updates the angle
+    ldr r1, [r0, #4]
+    add r1, #0x100
+    str r1, [r0, #4]
+
+    mov r1, #0x7000000              @Address of first affine matrix
+    add r1, #0x6
+    mov r2, #1                      @1 matrix wanted
+    mov r3, #8                      @OBJ matrix update
+    swi 0xF0000                     @Syscall to generate affine matrix from rotate struct
+
 wait_vblank:
     mov r0, #0x4000000              @Loads REG_VCOUNT
     add r0, #6
@@ -105,3 +116,9 @@ wait_vblank:
     bne wait_vblank
 
     b forever
+
+.data
+sprite_rotate:
+    .hword 0b100000000              @X scale
+    .hword 0b100000000              @Y scale
+    .hword 0x0                      @angle
