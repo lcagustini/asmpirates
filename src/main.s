@@ -27,7 +27,7 @@ main:
     mov r1, #0x6                    @VRAM base pointer + TileBase * 0x4000
     lsl r1, #24
     mov r2, #3*8                    @4bpp tile size is 8 words
-    bl dma0_copy
+    bl dma3_copy
 
     ldr r0, =bg0Map                 @GRIT generated map
     mov r1, #0x6                    @VRAM + MapBase*0x800
@@ -37,13 +37,13 @@ main:
     add r1, r2
     mov r2, #1                      @512x512 bg uses 4 base maps (4*0x800 bytes/4bytes per word)
     lsl r2, #11
-    bl dma0_copy
+    bl dma3_copy
 
     ldr r0, =bg0Pal                 @GRIT palette
     mov r1, #0x5                    @Palette memory
     lsl r1, #24
     mov r2, #8                      @Each color is 16bit
-    bl dma0_copy
+    bl dma3_copy
 
     ldr r0, =obj0Tiles
     mov r1, #0x6
@@ -53,7 +53,7 @@ main:
     add r1, #32                     @Tile base 1 -> 32 bytes offset
     mov r2, #1
     lsl r2, #9                      @64x64 sprite is 8x8 tiles -> 64 tiles * 8 word per tile
-    bl dma0_copy
+    bl dma3_copy
 
     ldr r0, =obj0Pal
     mov r1, #0x5                    @OBJ palette pointer
@@ -62,7 +62,7 @@ main:
     lsl r2, #8
     add r1, r2                      @Copies colors to the first palette slot
     mov r2, #8
-    bl dma0_copy
+    bl dma3_copy
 
     mov r0, #10                     @X = 10
     mov r1, #10                     @Y = 10
