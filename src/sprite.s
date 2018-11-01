@@ -1,6 +1,4 @@
 .text
-.align 2
-.thumb_func
 
 @ r0 -> x
 @ r1 -> y
@@ -8,6 +6,9 @@
 @ r3 -> size  (0-3)
 @ r4 -> tile base
 @ r5 -> palette number
+.align 2
+.thumb_func
+.type create_sprite, %function
 create_sprite:
     push { r6, r7 }
 
@@ -64,6 +65,7 @@ create_sprite:
 @ r2 -> id
 .align 2
 .thumb_func
+.type update_sprite, %function
 update_sprite:
     push { r3, r4 }
 

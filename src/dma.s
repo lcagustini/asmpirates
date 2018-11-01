@@ -1,8 +1,9 @@
-    @ r0 -> src
+@ r0 -> src
 @ r1 -> dest
 @ r2 -> size
-.thumb_func
 .text
+.thumb_func
+.type dma0_copy, %function
 dma0_copy:
     push { r3 }
 
@@ -25,7 +26,7 @@ dma0_copy:
     lsl r3, #24                     @DMA0 control reg
     add r3, #0xBA
     mov r1, #0b100001
-    lsl r1, #10     @Increment src and dest addr; no repeat; tranfer type = 32bits; start immediately; won't cause an IRQ; enables channel
+    lsl r1, #10                     @Increment src and dest addr; no repeat; tranfer type = 32bits; start immediately; won't cause an IRQ; enables channel
     strh r1, [r3]
 
     pop { r3 }

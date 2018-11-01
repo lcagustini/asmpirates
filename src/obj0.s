@@ -9,14 +9,16 @@
 @	+ 64 tiles Metatiled by 8x8 not compressed
 @	Total size: 32 + 2048 = 2080
 @
-@	Time-stamp: 2018-10-31, 15:33:47
+@	Time-stamp: 2018-10-31, 20:31:43
 @	Exported by Cearn's GBA Image Transmogrifier, v0.8.15
 @	( http://www.coranac.com/projects/#grit )
 @
 @=======================================================================
 
-.data
-.align	2
+	.section .rodata
+	.align	2
+	.global obj0Tiles		@ 2048 unsigned chars
+	.hidden obj0Tiles
 obj0Tiles:
 	.word 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 	.word 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
@@ -90,8 +92,10 @@ obj0Tiles:
 	.word 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 	.word 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 
-.data
-.align	2
+	.section .rodata
+	.align	2
+	.global obj0Pal		@ 32 unsigned chars
+	.hidden obj0Pal
 obj0Pal:
 	.hword 0x7C1F,0x154E,0x0152,0x1992,0x19B3,0x1DD5,0x2DF3,0x29F4
 	.hword 0x3A55,0x4A73,0x025F,0x4696,0x52F9,0x5F5C,0x639E,0x6BDF

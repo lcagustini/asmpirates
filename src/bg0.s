@@ -3,28 +3,32 @@
 
 @=======================================================================
 @
-@	bg0, 512x512@4,
+@	bg0, 512x512@4, 
 @	Transparent color : FF,00,FF
-@	+ palette 256 entries, not compressed
+@	+ palette 16 entries, not compressed
 @	+ 3 tiles (t|f|p reduced) not compressed
-@	+ regular map (in SBBs), not compressed, 64x64
-@	Total size: 512 + 96 + 8192 = 8800
+@	+ regular map (in SBBs), not compressed, 64x64 
+@	Total size: 32 + 96 + 8192 = 8320
 @
-@	Time-stamp: 2018-10-29, 16:49:49
+@	Time-stamp: 2018-10-31, 20:38:04
 @	Exported by Cearn's GBA Image Transmogrifier, v0.8.15
 @	( http://www.coranac.com/projects/#grit )
 @
 @=======================================================================
 
-.data
-.align	2
+	.section .rodata
+	.align	2
+	.global bg0Tiles		@ 96 unsigned chars
+	.hidden bg0Tiles
 bg0Tiles:
 	.word 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
 	.word 0x01011101,0x11111000,0x01011111,0x10110101,0x11111111,0x01100100,0x11011111,0x00110110
 	.word 0x22222222,0x22222222,0x22222222,0x22222222,0x22222222,0x22222222,0x22222222,0x22222222
 
-.data
-.align	2
+	.section .rodata
+	.align	2
+	.global bg0Map		@ 8192 unsigned chars
+	.hidden bg0Map
 bg0Map:
 	.hword 0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001
 	.hword 0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001
@@ -602,8 +606,10 @@ bg0Map:
 	.hword 0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001
 	.hword 0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001
 
-.data
-.align	2
+	.section .rodata
+	.align	2
+	.global bg0Pal		@ 32 unsigned chars
+	.hidden bg0Pal
 bg0Pal:
 	.hword 0x01A0,0x07E0,0x7C01,0x0000,0x0000,0x0000,0x0000,0x0000
 	.hword 0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000
