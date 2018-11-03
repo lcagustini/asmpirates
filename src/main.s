@@ -70,12 +70,12 @@ main:
     mov r3, #11                     @64x64
     mov r4, #1                      @Tile base = 1
     mov r5, #0                      @Palette slot = 0
-    bl create_sprite
+    bl sprite.create
 
-X .req r6
-Y .req r7
-    mov X, #0
-    mov Y, #0
+angle .req r6
+speed .req r7
+    mov angle, #0
+    mov speed, #0
 forever:
     mov r0, #0x4                    @r0 = KEYINPUT
     lsl r0, #24
@@ -92,14 +92,14 @@ input.right:
     and r1, r0                      @and "right" bit is set
     cmp r1, #0
     beq input.left
-    add X, #1                       @if "right" scrolls bg accordingly
+    add angle, #20                  @if "right" rotates sprite accordingly
 input.left:
     mov r1, #1
     lsl r1, #5
     and r1, r0                      @and "left" bit is set
     cmp r1, #0
     beq input.up
-    sub X, #1                       @if "left" scrolls bg accordingly
+    sub angle, #20                  @if "left" rotates sprite accordingly
 
 input.up:
     mov r1, #1
@@ -107,7 +107,11 @@ input.up:
     and r1, r0                      @and "up" bit is set
     cmp r1, #0
     beq input.down
-    sub Y, #1                       @if "up" scrolls bg accordingly
+    mov r1, #1
+    lsl r1, #6
+    cmp speed, r1
+    beq input.down
+    add speed, #1                   @if "up" increases speed
 
 input.down:
     mov r1, #1
@@ -115,7 +119,9 @@ input.down:
     and r1, r0                      @and "down" bit is set
     cmp r1, #0
     beq input.end
-    add Y, #1                       @if "down" scrolls bg accordingly
+    cmp speed, #0
+    beq input.end
+    sub speed, #1                   @if "down" decreases speed
 input.end:
 
     mov r0, #0x4                    @Loads REG_VCOUNT
@@ -126,28 +132,89 @@ wait_vblank:
     cmp r1, #161                    @Waits for first vblank scanline
     bne wait_vblank
 
-    mov r0, X                       @OAM should be updated only on vblank to avoid tearing
-    mov r1, Y
-    mov r2, #0
-    bl update_sprite                @Updates sprite 0 with X and Y
-
     ldr r0, =sprite_rotate          @Loads rotate struct and updates the angle
-    ldr r1, [r0, #4]
-    add r1, #0x10                   @Makes sprite rotate forever
-    str r1, [r0, #4]
+    strh angle, [r0, #4]
 
     mov r1, #0x7                    @Address of first affine matrix
     lsl r1, #24
     add r1, #0x6
     mov r2, #1                      @1 matrix wanted
     mov r3, #8                      @OBJ matrix update
+    push { r1 }
     swi 0xF                         @Syscall to generate affine matrix from rotate struct
+    pop { r1 }
+
+load_cos:
+    ldrh r2, [r1]                   @Loads cos from OBJ affine matrix
+    mov r0, #1
+    lsl r0, #15
+    and r0, r2                      @Checks for negative number (last bits)
+    mov r4, #0
+    cmp r0, #0
+    beq load_sin                    @If positive, r4 = 0
+    mov r4, #1                      @Else, r4 = 1
+    mov r0, #0x1
+    lsl r0, #16
+    sub r0, r2                      @Converts negative number to positive
+    mov r2, r0
+
+load_sin:
+    ldrh r3, [r1, #8]               @Loads sin from OBJ affine matrix
+    mov r0, #1
+    lsl r0, #15
+    and r0, r3                      @Checks for negative number (last bits)
+    mov r5, #0
+    cmp r0, #0
+    beq load_end                    @If positive, r5 = 0
+    mov r5, #1                      @Else, r5 = 1
+    mov r0, #0x1
+    lsl r0, #16
+    sub r0, r3                      @Converts negative number to positive
+    mov r3, r0
+load_end:
+
+    mov r0, speed
+    mul r2, r0                      @Speed * cos
+    lsr r2, #8                      @Converts back to integer
+    cmp r4, #1
+    bne update_x                    @If cos was negative, negate the result here
+    neg r2, r2
+
+update_x:
+    mov r0, #0
+    bl sprite.get_x
+    add r2, r0                      @Adds dx to x
+    mov r0, #0
+    mov r1, r2
+    bl sprite.set_x                 @Updates x on the sprite array
+
+    mov r0, speed
+    mul r3, r0                      @Speed * sin
+    lsr r3, #8                      @Converts back to integer
+    cmp r5, #1
+    bne update_y                    @If sin was negative, negate the result here
+    neg r3, r3
+
+update_y:
+    mov r0, #0
+    bl sprite.get_y
+    add r3, r0                      @Adds dy to y
+    mov r0, #0
+    mov r1, r3
+    bl sprite.set_y                 @Updates y on the sprite array
+
+    mov r0, r2                      @OAM should be updated only on vblank to avoid tearing
+    lsr r0, #8                      @Converts fixed point to integer
+    mov r1, r3
+    lsr r1, #8                      @Converts fixed point to integer
+    mov r2, #0
+    bl sprite.update                @Updates sprite 0 with X and Y
 
     b forever
 
 .section .iwram
 .align 2
 sprite_rotate:
-    .hword 0b100000000              @X scale
-    .hword 0b100000000              @Y scale
+    .hword 0b100000000              @X scale (8bit fractional part)
+    .hword 0b100000000              @Y scale (8bit fractional part)
     .hword 0x0                      @angle

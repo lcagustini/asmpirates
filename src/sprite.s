@@ -8,16 +8,30 @@
 @ r5 -> palette number
 .align 2
 .thumb_func
-.type create_sprite, %function
-create_sprite:
+.type sprite.create, %function
+sprite.create:
     push { r6, r7 }
+
+    push { r0-r5 }
+    ldr r2, =sprite_num
+    ldr r2, [r2]
+    lsl r2, #2              @Gets which position of the array to access
+
+    lsl r0, #8              @X to fixed point
+    lsl r1, #8              @Y to fixed point
+
+    ldr r3, =sprites
+    add r3, r2              @Get new sprite memory position
+    strh r0, [r3]
+    strh r1, [r3, #2]       @Store X and Y to sprites array
+    pop { r0-r5 }
 
     mov r7, #0xFF           @Truncates Y
     and r1, r7
     mov r7, #0b11           @Truncates shape
     and r2, r7
     lsl r2, #14             @Shifts shape to correct bits
-    mov r7, #0b11           @Affine sprite with double size box
+    mov r7, #0b1            @Affine sprite with double size box
     lsl r7, #8
     orr r1, r7
     orr r1, r2              @OBJ attrib 0
@@ -65,8 +79,8 @@ create_sprite:
 @ r2 -> id
 .align 2
 .thumb_func
-.type update_sprite, %function
-update_sprite:
+.type sprite.update, %function
+sprite.update:
     push { r3, r4 }
 
     mov r3, #0xFF           @Truncates Y to 8 bits
@@ -100,7 +114,74 @@ update_sprite:
     pop { r3, r4 }
     bx lr
 
+@ r0 -> id
+.align 2
+.thumb_func
+.type sprite.get_x, %function
+sprite.get_x:
+    push { r1 }
+
+    ldr r1, =sprites
+    lsl r0, #4
+    ldrh r0, [r1, r0]       @Load X from array
+
+    pop { r1 }
+    bx lr
+
+@ r0 -> id
+@ r1 -> X
+.align 2
+.thumb_func
+.type sprite.set_x, %function
+sprite.set_x:
+    push { r2 }
+
+    ldr r2, =sprites
+    lsl r0, #4
+    strh r1, [r2, r0]       @Saves X to array
+
+    pop { r2 }
+    bx lr
+
+@ r0 -> id
+.align 2
+.thumb_func
+.type sprite.get_y, %function
+sprite.get_y:
+    push { r1 }
+
+    ldr r1, =sprites
+    lsl r0, #4
+    add r0, #2
+    ldrh r0, [r1, r0]       @Gets Y from array
+
+    pop { r1 }
+    bx lr
+
+@ r0 -> id
+@ r1 -> Y
+.align 2
+.thumb_func
+.type sprite.set_y, %function
+sprite.set_y:
+    push { r2 }
+
+    ldr r2, =sprites
+    lsl r0, #4
+    add r0, #2
+    strh r1, [r2, r0]       @Save Y to array
+
+    pop { r2 }
+    bx lr
+
 .data
 .align 2
 sprite_num:
     .word 0
+.bss
+.align 2
+sprites:
+    .space 128
+    @Sprites: array of struct
+    @                    u16 (.8 fixed point) -> x
+    @                    u16 (.8 fixed point) -> y
