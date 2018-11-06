@@ -26,7 +26,7 @@ main:
     ldr r0, =bg0Tiles               @Tile source
     mov r1, #0x6                    @VRAM base pointer + TileBase * 0x4000
     lsl r1, #24
-    mov r2, #3*8                    @4bpp tile size is 8 words
+    mov r2, #25*8                   @4bpp tile size is 8 words
     bl dma3_copy
 
     ldr r0, =bg0Map                 @GRIT generated map
@@ -64,8 +64,8 @@ main:
     mov r2, #8
     bl dma3_copy
 
-    mov r0, #10                     @X = 10
-    mov r1, #10                     @Y = 10
+    mov r0, #88                     @X = SCREEN_WIDTH/2 - SPRITE_SIZE/2
+    mov r1, #48                     @Y = SCREEN_HEIGHT/2 - SPRITE_SIZE/2
     mov r2, #0                      @Square
     mov r3, #11                     @64x64
     mov r4, #1                      @Tile base = 1
@@ -135,6 +135,7 @@ wait_vblank:
     ldr r0, =sprite_rotate          @Loads rotate struct and updates the angle
     strh angle, [r0, #4]
 
+rotate_sprite:
     mov r1, #0x7                    @Address of first affine matrix
     lsl r1, #24
     add r1, #0x6
@@ -144,6 +145,7 @@ wait_vblank:
     swi 0xF                         @Syscall to generate affine matrix from rotate struct
     pop { r1 }
 
+load_start:
 load_cos:
     ldrh r2, [r1]                   @Loads cos from OBJ affine matrix
     mov r0, #1
@@ -173,9 +175,10 @@ load_sin:
     mov r3, r0
 load_end:
 
+get_dx:
     mov r0, speed
     mul r2, r0                      @Speed * cos
-    lsr r2, #8                      @Converts back to integer
+    asr r2, #8                      @Converts back to integer
     cmp r4, #1
     bne update_x                    @If cos was negative, negate the result here
     neg r2, r2
@@ -188,9 +191,10 @@ update_x:
     mov r1, r2
     bl sprite.set_x                 @Updates x on the sprite array
 
+get_dy:
     mov r0, speed
     mul r3, r0                      @Speed * sin
-    lsr r3, #8                      @Converts back to integer
+    asr r3, #8                      @Converts back to integer
     cmp r5, #1
     bne update_y                    @If sin was negative, negate the result here
     neg r3, r3
@@ -203,12 +207,18 @@ update_y:
     mov r1, r3
     bl sprite.set_y                 @Updates y on the sprite array
 
-    mov r0, r2                      @OAM should be updated only on vblank to avoid tearing
-    lsr r0, #8                      @Converts fixed point to integer
-    mov r1, r3
-    lsr r1, #8                      @Converts fixed point to integer
-    mov r2, #0
-    bl sprite.update                @Updates sprite 0 with X and Y
+update_bg:
+    mov r0, #0x4                    @Should be updated only on vblank to avoid tearing
+    lsl r0, #24
+    add r0, #0x10                   @BG0 x offset reg
+    asr r2, #8                      @Converts fixed point to integer
+    strh r2, [r0]                   @Stores scroll x
+
+    mov r0, #0x4
+    lsl r0, #24
+    add r0, #0x12                   @BG0 x offset reg
+    asr r3, #8                      @Converts fixed point to integer
+    strh r3, [r0]                   @Stores scroll y
 
     b forever
 
