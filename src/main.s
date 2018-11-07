@@ -3,8 +3,8 @@
 .include "src/sprite.s"
 .include "src/background.s"
 
-.include "src/bg0.s"
-.include "src/obj0.s"
+.include "bin/bg0.s"
+.include "bin/obj0.s"
 
 .text
 .align 2
