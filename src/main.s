@@ -1,6 +1,7 @@
 .include "src/interrupt.s"
 .include "src/dma.s"
 .include "src/sprite.s"
+.include "src/background.s"
 
 .include "src/bg0.s"
 .include "src/obj0.s"
@@ -24,46 +25,11 @@ main:
     lsl r1, #10
     strh r1, [r0]
 
-    ldr r0, =bg0Tiles               @Tile source
-    mov r1, #0x6                    @VRAM base pointer + TileBase * 0x4000
-    lsl r1, #24
-    mov r2, #25*8                   @4bpp tile size is 8 words
-    bl dma3_copy
+    bl enable_vblank_interrupt
 
-    ldr r0, =bg0Map                 @GRIT generated map
-    mov r1, #0x6                    @VRAM + MapBase*0x800
-    lsl r1, #24
-    mov r2, #0x20
-    lsl r2, #8
-    add r1, r2
-    mov r2, #1                      @512x512 bg uses 4 base maps (4*0x800 bytes/4bytes per word)
-    lsl r2, #11
-    bl dma3_copy
+    copy_512x512_bg bg0 25*8 0 4
 
-    ldr r0, =bg0Pal                 @GRIT palette
-    mov r1, #0x5                    @Palette memory
-    lsl r1, #24
-    mov r2, #8                      @Each color is 16bit
-    bl dma3_copy
-
-    ldr r0, =obj0Tiles
-    mov r1, #0x6
-    lsl r1, #8
-    add r1, #0x1                    @OBJ tile vram location
-    lsl r1, #16
-    add r1, #32                     @Tile base 1 -> 32 bytes offset
-    mov r2, #1
-    lsl r2, #9                      @64x64 sprite is 8x8 tiles -> 64 tiles * 8 word per tile
-    bl dma3_copy
-
-    ldr r0, =obj0Pal
-    mov r1, #0x5                    @OBJ palette pointer
-    lsl r1, #24
-    mov r2, #0x2
-    lsl r2, #8
-    add r1, r2                      @Copies colors to the first palette slot
-    mov r2, #8
-    bl dma3_copy
+    copy_64x64_sprite obj0 1 0
 
     mov r0, #88                     @X = SCREEN_WIDTH/2 - SPRITE_SIZE/2
     mov r1, #48                     @Y = SCREEN_HEIGHT/2 - SPRITE_SIZE/2
@@ -125,13 +91,7 @@ input.down:
     sub speed, #1                   @if "down" decreases speed
 input.end:
 
-    mov r0, #0x4                    @Loads REG_VCOUNT
-    lsl r0, #24
-    add r0, #6
-wait_vblank:
-    ldrh r1, [r0]
-    cmp r1, #161                    @Waits for first vblank scanline
-    bne wait_vblank
+    swi 0x5                         @Asks BIOS to wait for VBlank
 
     ldr r0, =sprite_rotate          @Loads rotate struct and updates the angle
     strh angle, [r0, #4]
