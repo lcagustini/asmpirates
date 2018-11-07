@@ -1,5 +1,33 @@
 .text
 
+@ Copies GRIT generated data to vram
+.macro copy_64x64_sprite name tilebase palette
+    push { r0-r2 }
+
+    ldr r0, =\name\()Tiles
+    mov r1, #0x6
+    lsl r1, #8
+    add r1, #0x1                    @OBJ tile vram location
+    lsl r1, #16
+    mov r2, #\tilebase
+    lsl r2, #5                      @Tile base 1 -> 32 bytes offset
+    add r1, r2
+    mov r2, #1
+    lsl r2, #9                      @64x64 sprite is 8x8 tiles -> 64 tiles * 8 word per tile
+    bl dma3_copy
+
+    ldr r0, =\name\()Pal
+    mov r1, #0x5                    @OBJ palette pointer
+    lsl r1, #24
+    mov r2, #0x2
+    lsl r2, #8
+    add r1, r2                      @Copies colors to the first palette slot
+    mov r2, #8
+    bl dma3_copy
+
+    pop { r0-r2 }
+.endm
+
 @ r0 -> x
 @ r1 -> y
 @ r2 -> shape (0->square, 1->horizontal, 2->vertical)
@@ -178,7 +206,7 @@ sprite.set_y:
 .align 2
 sprite_num:
     .word 0
-.bss
+.section .iwram
 .align 2
 sprites:
     .space 128*2

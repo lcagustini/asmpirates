@@ -1,3 +1,4 @@
+.include "src/interrupt.s"
 .include "src/dma.s"
 .include "src/sprite.s"
 
